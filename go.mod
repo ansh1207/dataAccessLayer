@@ -1,4 +1,4 @@
-module datalayer
+module github.com/ansh1207/dataAccessLayer
 
 go 1.17
 

@@ -2,24 +2,25 @@ package main
 
 import (
 	"context"
-	"datalayer/db"
 	"testing"
 	"time"
+
+	"github.com/ansh1207/dataAccessLayer/db"
 )
 
 type RedisInsertDoc struct {
-	Key string
-	Doc interface{}
-	Expiry time.Duration	
+	Key    string
+	Doc    interface{}
+	Expiry time.Duration
 }
 
 type RedisFindDoc struct {
-    Key []string
+	Key []string
 }
 
 type RedisConfigType struct {
 	DbType int
-	DbUrl string
+	DbUrl  string
 }
 
 func Test_redisClient_InsertOne(t *testing.T) {
@@ -41,8 +42,8 @@ func Test_redisClient_InsertOne(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "case 1",
-			args: args{ctx: context.TODO(), collection: "testCol1", document: RedisInsertDoc{Key: "testing", Doc: "testing the data", Expiry: expired} },
+			name:    "case 1",
+			args:    args{ctx: context.TODO(), collection: "testCol1", document: RedisInsertDoc{Key: "testing", Doc: "testing the data", Expiry: expired}},
 			want:    [12]byte{},
 			wantErr: false,
 		},
@@ -81,7 +82,7 @@ func Test_redisClient_InsertMany(t *testing.T) {
 			args: args{ctx: context.TODO(), collection: "testCol1", document: []interface{}{
 				RedisInsertDoc{Key: "testing1", Doc: "testing the data 1", Expiry: expired},
 				RedisInsertDoc{Key: "testing2", Doc: "testing the data 2", Expiry: expired},
-			} },
+			}},
 			want:    [12]byte{},
 			wantErr: false,
 		},
@@ -115,8 +116,8 @@ func Test_redisClient_FindOne(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "case 1",
-			args: args{ctx: context.TODO(), collection: "testCol1", document: "testing2" },
+			name:    "case 1",
+			args:    args{ctx: context.TODO(), collection: "testCol1", document: "testing2"},
 			want:    [12]byte{},
 			wantErr: false,
 		},
@@ -150,8 +151,8 @@ func Test_redisClient_FindMany(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "case 1",
-			args: args{ctx: context.TODO(), collection: "testCol1", document: RedisFindDoc{Key: []string{"testing1", "testing2"}} },
+			name:    "case 1",
+			args:    args{ctx: context.TODO(), collection: "testCol1", document: RedisFindDoc{Key: []string{"testing1", "testing2"}}},
 			want:    [12]byte{},
 			wantErr: false,
 		},

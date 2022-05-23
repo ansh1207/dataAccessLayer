@@ -2,8 +2,9 @@ package main
 
 import (
 	"context"
-	"datalayer/db"
 	"testing"
+
+	"github.com/ansh1207/dataAccessLayer/db"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -11,7 +12,7 @@ import (
 
 type MongoConfigType struct {
 	DbType int
-	DbUrl string
+	DbUrl  string
 	DbName string
 }
 
@@ -32,8 +33,8 @@ func Test_mongoClient_InsertOne(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "case 1",
-			args: args{ctx: context.TODO(), collection: "testCol", filter: bson.D{{"title", "Record of a Shriveled Datum"}, {"text", "No bytes, no problem. Just insert a document, in MongoDB"}, {"index", 1}}},
+			name:    "case 1",
+			args:    args{ctx: context.TODO(), collection: "testCol", filter: bson.D{{"title", "Record of a Shriveled Datum"}, {"text", "No bytes, no problem. Just insert a document, in MongoDB"}, {"index", 1}}},
 			want:    [12]byte{},
 			wantErr: false,
 		},
@@ -71,11 +72,10 @@ func Test_mongoClient_InsertMany(t *testing.T) {
 			args: args{ctx: context.TODO(), collection: "testCol", filter: []interface{}{
 				bson.D{{"title", "Record of a Shriveled Datum"}, {"text", "No bytes, no problem. Just insert a document, in MongoDB"}, {"index", 2}},
 				bson.D{{"title", "Showcasing a Blossoming Binary"}, {"text", "Binary data, safely stored with GridFS. Bucket the data"}, {"index", 3}},
-				},
+			},
 			},
 			wantErr: false,
 		},
-
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -108,11 +108,10 @@ func Test_mongoClient_FindMany(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "case 1",
-			args: args{ctx: context.TODO(), collection: "testCol", filter: bson.M{}},
+			name:    "case 1",
+			args:    args{ctx: context.TODO(), collection: "testCol", filter: bson.M{}},
 			wantErr: false,
 		},
-
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -131,7 +130,7 @@ func Test_mongoClient_FindMany(t *testing.T) {
 func Test_mongoClient_FindOne(t *testing.T) {
 	var mongoTestingClient = db.NewStore(MongoConfigType{DbType: 1, DbUrl: "mongodb://localhost:27017", DbName: "tester"})
 	mongoTestingClient.Connect()
- 	defer mongoTestingClient.Cancel()
+	defer mongoTestingClient.Cancel()
 
 	type args struct {
 		ctx        context.Context
@@ -145,8 +144,8 @@ func Test_mongoClient_FindOne(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "case 1",
-			args: args{ctx: context.TODO(), collection: "testCol", document: bson.M{}},
+			name:    "case 1",
+			args:    args{ctx: context.TODO(), collection: "testCol", document: bson.M{}},
 			wantErr: false,
 		},
 	}
@@ -161,11 +160,10 @@ func Test_mongoClient_FindOne(t *testing.T) {
 	}
 }
 
-
 func Test_mongoClient_UpdateOne(t *testing.T) {
 	var mongoTestingClient = db.NewStore(MongoConfigType{DbType: 1, DbUrl: "mongodb://localhost:27017", DbName: "tester"})
 	mongoTestingClient.Connect()
- 	defer mongoTestingClient.Cancel()
+	defer mongoTestingClient.Cancel()
 
 	type args struct {
 		ctx        context.Context
@@ -180,8 +178,8 @@ func Test_mongoClient_UpdateOne(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "case 1",
-			args: args{ctx: context.TODO(), collection: "testCol", filter: bson.M{"index": 1}, update: bson.D{ {"$set", bson.D{{"text", "things have changed now !!"}} }} },
+			name:    "case 1",
+			args:    args{ctx: context.TODO(), collection: "testCol", filter: bson.M{"index": 1}, update: bson.D{{"$set", bson.D{{"text", "things have changed now !!"}}}}},
 			wantErr: false,
 		},
 	}
@@ -199,7 +197,7 @@ func Test_mongoClient_UpdateOne(t *testing.T) {
 func Test_mongoClient_UpdateMany(t *testing.T) {
 	var mongoTestingClient = db.NewStore(MongoConfigType{DbType: 1, DbUrl: "mongodb://localhost:27017", DbName: "tester"})
 	mongoTestingClient.Connect()
- 	defer mongoTestingClient.Cancel()
+	defer mongoTestingClient.Cancel()
 
 	type args struct {
 		ctx        context.Context
@@ -214,8 +212,8 @@ func Test_mongoClient_UpdateMany(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "case 1",
-			args: args{ctx: context.TODO(), collection: "testCol", filter: bson.D{},update: bson.D{{"$set", bson.D{{"text", "things have changed now !!"}}}} },
+			name:    "case 1",
+			args:    args{ctx: context.TODO(), collection: "testCol", filter: bson.D{}, update: bson.D{{"$set", bson.D{{"text", "things have changed now !!"}}}}},
 			wantErr: false,
 		},
 	}

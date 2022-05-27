@@ -20,7 +20,7 @@ The functions that are exposed to be used by multiple databases
 type DbConnector interface {
 	Connect() error
 	FindOne(context.Context, string, interface{}) (interface{}, error)
-	FindOneHash(context.Context, string, interface{}) (interface{}, error)
+	FindOneHash(context.Context, string, interface{}, string) (interface{}, error)
 	FindMany(context.Context, string, interface{}) ([]interface{}, error)
 	InsertOne(context.Context, string, interface{}) (interface{}, error)
 	InsertMany(context.Context, string, []interface{}) ([]interface{}, error)

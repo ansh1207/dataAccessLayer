@@ -61,7 +61,7 @@ func (mc *mongoClient) FindOne(ctx context.Context, collection string, filter in
 	return singleDoc, nil
 }
 
-func (mc *mongoClient) FindOneHash(context.Context, string, interface{}) (interface{}, error) {
+func (mc *mongoClient) FindOneHash(context.Context, string, interface{}, string) (interface{}, error) {
 	return nil, nil
 }
 

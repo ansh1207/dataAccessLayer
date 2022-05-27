@@ -41,9 +41,9 @@ func (rc *redisClient) FindOne(ctx context.Context, collection string, filter in
 	return val, nil
 }
 
-func (rc *redisClient) FindOneHash(ctx context.Context, collection string, filter interface{}) (interface{}, error) {
+func (rc *redisClient) FindOneHash(ctx context.Context, collection string, filter interface{}, field string) (interface{}, error) {
 	subKey := filter.(string)
-	val, err := rc.cl.HMGet(context.TODO(), createRedisKey(collection, subKey)).Result()
+	val, err := rc.cl.HGet(context.TODO(), createRedisKey(collection, subKey), field).Result()
 	if err != nil {
 		return nil, err
 	}

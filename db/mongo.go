@@ -31,7 +31,7 @@ func newMongoClient(dbUrl string, dbName string) DbConnector {
 }
 
 func (mc *mongoClient) Connect() error {
-	ctx, _ := context.WithTimeout(context.Background(), 10 * time.Second)
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	err := mc.cl.Connect(ctx)
 	if err != nil {
 		return err
@@ -43,7 +43,7 @@ func (mc *mongoClient) Connect() error {
 	return nil
 }
 
-func mongoPing(client *mongo.Client, ctx context.Context) error{
+func mongoPing(client *mongo.Client, ctx context.Context) error {
 	err := client.Ping(ctx, readpref.Primary())
 	if err != nil {
 		return err
@@ -52,14 +52,17 @@ func mongoPing(client *mongo.Client, ctx context.Context) error{
 	return nil
 }
 
-
 func (mc *mongoClient) FindOne(ctx context.Context, collection string, filter interface{}) (interface{}, error) {
 	singleResult := mc.db.Collection(collection).FindOne(ctx, filter)
 	var singleDoc bson.M
 	if err := singleResult.Decode(&singleDoc); err != nil {
-    	log.Fatal(err)
+		log.Fatal(err)
 	}
 	return singleDoc, nil
+}
+
+func (mc *mongoClient) FindOneHash(context.Context, string, interface{}) (interface{}, error) {
+	return nil, nil
 }
 
 func (mc *mongoClient) FindMany(ctx context.Context, collection string, filter interface{}) ([]interface{}, error) {
@@ -105,9 +108,9 @@ func (mc *mongoClient) Cancel() error {
 	}
 
 	err := client.Disconnect(context.TODO())
-    if err != nil {
-        panic(err)
-    }
+	if err != nil {
+		panic(err)
+	}
 	fmt.Println("Connection to MongoDB closed.")
 	return nil
 }

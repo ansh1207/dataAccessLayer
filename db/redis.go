@@ -29,12 +29,21 @@ func (rc *redisClient) Connect() error {
 }
 
 type RedisFindDoc struct {
-    Key []string
+	Key []string
 }
 
 func (rc *redisClient) FindOne(ctx context.Context, collection string, filter interface{}) (interface{}, error) {
 	subKey := filter.(string)
 	val, err := rc.cl.Get(context.TODO(), createRedisKey(collection, subKey)).Result()
+	if err != nil {
+		return nil, err
+	}
+	return val, nil
+}
+
+func (rc *redisClient) FindOneHash(ctx context.Context, collection string, filter interface{}) (interface{}, error) {
+	subKey := filter.(string)
+	val, err := rc.cl.HMGet(context.TODO(), createRedisKey(collection, subKey)).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -53,16 +62,16 @@ func (rc *redisClient) FindMany(ctx context.Context, collection string, filter i
 }
 
 type RedisInsertDoc struct {
-    Key string
-    Doc interface{}
-    Expiry time.Duration
+	Key    string
+	Doc    interface{}
+	Expiry time.Duration
 }
 
 func (rc *redisClient) InsertOne(ctx context.Context, collection string, document interface{}) (interface{}, error) {
 
 	convertedDoc := RedisInsertDoc{}
 	mapstructure.Decode(document, &convertedDoc)
-	
+
 	err := rc.cl.Set(context.TODO(), createRedisKey(collection, convertedDoc.Key), convertedDoc.Doc, time.Duration(convertedDoc.Expiry)).Err()
 	var res interface{} = false
 	if err != nil {
@@ -71,7 +80,7 @@ func (rc *redisClient) InsertOne(ctx context.Context, collection string, documen
 	return nil, nil
 }
 
-func createRedisKey (collection string, subcollection string) string {
+func createRedisKey(collection string, subcollection string) string {
 	if subcollection == "" {
 		return collection
 	} else {

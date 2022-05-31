@@ -86,6 +86,10 @@ func (mc *mongoClient) InsertOne(ctx context.Context, collection string, documen
 	return result.InsertedID, err
 }
 
+func (mc *mongoClient) InsertOneHash(ctx context.Context, collection string, document ...interface{}) (interface{}, error) {
+	return nil, nil
+}
+
 func (mc *mongoClient) InsertMany(ctx context.Context, collection string, document []interface{}) ([]interface{}, error) {
 	result, err := mc.db.Collection(collection).InsertMany(ctx, document)
 	return result.InsertedIDs, err

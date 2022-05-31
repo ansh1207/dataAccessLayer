@@ -65,7 +65,7 @@ func (mc *mongoClient) FindOneHash(context.Context, string, interface{}, string)
 	return nil, nil
 }
 
-func (mc *mongoClient) FindManyHash(context.Context, string, ...string) ([]interface{}, error) {
+func (mc *mongoClient) FindManyHash(context.Context, string) (map[string]string, error) {
 	return nil, nil
 }
 

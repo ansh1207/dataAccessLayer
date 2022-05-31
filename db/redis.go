@@ -61,13 +61,9 @@ func (rc *redisClient) FindMany(ctx context.Context, collection string, filter i
 
 }
 
-func (rc *redisClient) FindManyHash(ctx context.Context, collection string, fields ...string) ([]interface{}, error) {
+func (rc *redisClient) FindManyHash(ctx context.Context, collection string) (map[string]string, error) {
 
-	val, err := rc.cl.HMGet(context.TODO(), collection, fields...).Result()
-	if err != nil {
-		return nil, err
-	}
-	return val, nil
+	return rc.cl.HGetAll(context.TODO(), collection).Result()
 }
 
 type RedisInsertDoc struct {

@@ -85,6 +85,18 @@ func (rc *redisClient) InsertOne(ctx context.Context, collection string, documen
 	return nil, nil
 }
 
+func (rc *redisClient) InsertOneHash(ctx context.Context, collection string, document ...interface{}) (interface{}, error) {
+	convertedDoc := RedisInsertDoc{}
+	mapstructure.Decode(document, &convertedDoc)
+
+	err := rc.cl.HMSet(context.TODO(), collection, document...)
+	var res interface{} = false
+	if err != nil {
+		return res, nil
+	}
+	return nil, nil
+}
+
 func createRedisKey(collection string, subcollection string) string {
 	if subcollection == "" {
 		return collection

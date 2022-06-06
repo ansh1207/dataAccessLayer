@@ -74,11 +74,11 @@ func (mc *mongoClient) FindMany(ctx context.Context, collection string, filter i
 	if err != nil {
 		panic(err)
 	}
-	var resultMap *[]interface{}
+	var resultMap []interface{}
 	if err = result.All(ctx, &resultMap); err != nil {
 		log.Fatal(err)
 	}
-	return *resultMap, err
+	return resultMap, err
 }
 
 func (mc *mongoClient) InsertOne(ctx context.Context, collection string, document interface{}) (interface{}, error) {

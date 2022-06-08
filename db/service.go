@@ -24,7 +24,7 @@ type DbConnector interface {
 	FindManyHash(context.Context, string) (map[string]string, error)
 	FindMany(context.Context, string, interface{}) ([]interface{}, error)
 	InsertOne(context.Context, string, interface{}) (interface{}, error)
-	InsertOneHash(context.Context, string, ...interface{}) (interface{}, error)
+	InsertOneHash(context.Context, string, interface{}) (interface{}, error)
 	InsertMany(context.Context, string, []interface{}) ([]interface{}, error)
 	UpdateOne(context.Context, string, interface{}, interface{}) (interface{}, error)
 	UpdateMany(context.Context, string, interface{}, interface{}) (interface{}, error)

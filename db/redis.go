@@ -85,11 +85,11 @@ func (rc *redisClient) InsertOne(ctx context.Context, collection string, documen
 	return nil, nil
 }
 
-func (rc *redisClient) InsertOneHash(ctx context.Context, hash string, collection string, document interface{}) (interface{}, error) {
+func (rc *redisClient) InsertOneHash(ctx context.Context, hash string, document ...interface{}) (interface{}, error) {
 	convertedDoc := RedisInsertDoc{}
 	mapstructure.Decode(document, &convertedDoc)
 
-	err := rc.cl.HSet(context.TODO(), hash, collection, document)
+	err := rc.cl.HSet(context.TODO(), hash, document)
 	fmt.Println(err)
 	var res interface{} = false
 	if err != nil {

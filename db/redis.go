@@ -89,7 +89,7 @@ func (rc *redisClient) InsertOneHash(ctx context.Context, collection string, doc
 	convertedDoc := RedisInsertDoc{}
 	mapstructure.Decode(document, &convertedDoc)
 
-	err := rc.cl.HMSet(context.TODO(), collection, convertedDoc)
+	err := rc.cl.HSet(context.TODO(), collection, document)
 	fmt.Println(err)
 	var res interface{} = false
 	if err != nil {

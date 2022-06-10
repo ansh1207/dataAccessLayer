@@ -21,10 +21,11 @@ type DbConnector interface {
 	Connect() error
 	FindOne(context.Context, string, interface{}) (interface{}, error)
 	FindOneHash(context.Context, string, interface{}, string) (interface{}, error)
-	FindManyHash(context.Context, string) (map[string]string, error)
+	FindManyHash(context.Context, []interface{}) ([]interface{}, error)
 	FindMany(context.Context, string, interface{}) ([]interface{}, error)
 	InsertOne(context.Context, string, interface{}) (interface{}, error)
 	InsertOneHash(context.Context, string, ...interface{}) (interface{}, error)
+	InsertManyHash(context.Context, []interface{}) (interface{}, error)
 	InsertMany(context.Context, string, []interface{}) ([]interface{}, error)
 	UpdateOne(context.Context, string, interface{}, interface{}) (interface{}, error)
 	UpdateMany(context.Context, string, interface{}, interface{}) (interface{}, error)

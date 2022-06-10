@@ -65,7 +65,7 @@ func (mc *mongoClient) FindOneHash(context.Context, string, interface{}, string)
 	return nil, nil
 }
 
-func (mc *mongoClient) FindManyHash(context.Context, string) (map[string]string, error) {
+func (mc *mongoClient) FindManyHash(context.Context, []interface{}) ([]interface{}, error) {
 	return nil, nil
 }
 
@@ -87,6 +87,10 @@ func (mc *mongoClient) InsertOne(ctx context.Context, collection string, documen
 }
 
 func (mc *mongoClient) InsertOneHash(ctx context.Context, collection string, document ...interface{}) (interface{}, error) {
+	return nil, nil
+}
+
+func (mc *mongoClient) InsertManyHash(ctx context.Context, document []interface{}) (interface{}, error) {
 	return nil, nil
 }
 

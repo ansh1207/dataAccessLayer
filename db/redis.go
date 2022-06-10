@@ -61,15 +61,23 @@ func (rc *redisClient) FindMany(ctx context.Context, collection string, filter i
 
 }
 
-func (rc *redisClient) FindManyHash(ctx context.Context, collection string) (map[string]string, error) {
-
-	return rc.cl.HGetAll(context.TODO(), collection).Result()
-}
-
 type RedisInsertDoc struct {
 	Key    string
 	Doc    interface{}
 	Expiry time.Duration
+}
+
+type RedisInsertHash struct {
+	Collection string
+	Key        string
+	Doc        interface{}
+	Expiry     time.Duration
+}
+
+type RedisFindHash struct {
+	Collection string
+	Key        string
+	Field      string
 }
 
 func (rc *redisClient) InsertOne(ctx context.Context, collection string, document interface{}) (interface{}, error) {
@@ -85,17 +93,64 @@ func (rc *redisClient) InsertOne(ctx context.Context, collection string, documen
 	return nil, nil
 }
 
-func (rc *redisClient) InsertOneHash(ctx context.Context, hash string, document ...interface{}) (interface{}, error) {
-	convertedDoc := RedisInsertDoc{}
-	mapstructure.Decode(document, &convertedDoc)
+func (rc *redisClient) InsertOneHash(ctx context.Context, collection string, document ...interface{}) (interface{}, error) {
+	// var ifaces []interface{}
+	pipe := rc.cl.TxPipeline()
 
-	err := rc.cl.HSet(context.TODO(), hash, document)
-	fmt.Println(err)
-	var res interface{} = false
-	if err != nil {
-		return res, nil
+	for i := range document {
+		convertedDoc := RedisInsertDoc{}
+		mapstructure.Decode(document[i], &convertedDoc)
+		if err := rc.cl.HMSet(context.TODO(), collection, convertedDoc.Key, convertedDoc.Doc).Err(); err != nil {
+			return nil, err
+		}
+		// ifaces = append(ifaces, createRedisKey(collection, convertedDoc.Key), convertedDoc.Doc)
+		pipe.Expire(context.TODO(), createRedisKey(collection, convertedDoc.Key), convertedDoc.Expiry)
+	}
+
+	if _, err := pipe.Exec(context.TODO()); err != nil {
+		return nil, err
 	}
 	return nil, nil
+}
+
+func (rc *redisClient) InsertManyHash(ctx context.Context, document []interface{}) (interface{}, error) {
+	// var ifaces []interface{}
+	pipe := rc.cl.TxPipeline()
+
+	for i := range document {
+		convertedDoc := RedisInsertHash{}
+		mapstructure.Decode(document[i], &convertedDoc)
+		if err := rc.cl.HMSet(context.TODO(), convertedDoc.Collection, convertedDoc.Key, convertedDoc.Doc).Err(); err != nil {
+			return nil, err
+		}
+		// ifaces = append(ifaces, createRedisKey(collection, convertedDoc.Key), convertedDoc.Doc)
+		pipe.Expire(context.TODO(), convertedDoc.Collection, convertedDoc.Expiry)
+	}
+
+	if _, err := pipe.Exec(context.TODO()); err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+func (rc *redisClient) FindManyHash(ctx context.Context, document []interface{}) ([]interface{}, error) {
+	var results []interface{}
+	pipe := rc.cl.TxPipeline()
+
+	for i := range document {
+		convertedDoc := RedisFindHash{}
+		mapstructure.Decode(document[i], &convertedDoc)
+		val, err := rc.cl.HGet(context.TODO(), createRedisKey(convertedDoc.Collection, convertedDoc.Key), convertedDoc.Field).Result()
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, val)
+	}
+
+	if _, err := pipe.Exec(context.TODO()); err != nil {
+		return nil, err
+	}
+	return results, nil
 }
 
 func createRedisKey(collection string, subcollection string) string {

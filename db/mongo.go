@@ -61,14 +61,6 @@ func (mc *mongoClient) FindOne(ctx context.Context, collection string, filter in
 	return singleDoc, nil
 }
 
-func (mc *mongoClient) FindOneHash(context.Context, string, interface{}, string) (interface{}, error) {
-	return nil, nil
-}
-
-func (mc *mongoClient) FindManyHash(context.Context, []interface{}) ([]interface{}, error) {
-	return nil, nil
-}
-
 func (mc *mongoClient) FindMany(ctx context.Context, collection string, filter interface{}) ([]interface{}, error) {
 	result, err := mc.db.Collection(collection).Find(ctx, filter)
 	if err != nil {
@@ -84,14 +76,6 @@ func (mc *mongoClient) FindMany(ctx context.Context, collection string, filter i
 func (mc *mongoClient) InsertOne(ctx context.Context, collection string, document interface{}) (interface{}, error) {
 	result, err := mc.db.Collection(collection).InsertOne(ctx, document)
 	return result.InsertedID, err
-}
-
-func (mc *mongoClient) InsertOneHash(ctx context.Context, collection string, document ...interface{}) (interface{}, error) {
-	return nil, nil
-}
-
-func (mc *mongoClient) InsertManyHash(ctx context.Context, document []interface{}) (interface{}, error) {
-	return nil, nil
 }
 
 func (mc *mongoClient) InsertMany(ctx context.Context, collection string, document []interface{}) ([]interface{}, error) {

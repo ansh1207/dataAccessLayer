@@ -13,7 +13,32 @@ type redisClient struct {
 	cl *redis.Client
 }
 
-func newRedisClient(dbUrl string) DbConnector {
+type RedisInsertDoc struct {
+	Key    string
+	Doc    interface{}
+	Expiry time.Duration
+}
+
+type RedisInsertHash struct {
+	Collection string
+	Key        string
+	Doc        interface{}
+	Expiry     time.Duration
+}
+
+type RedisFindHash struct {
+	Collection string
+	Key        string
+	Field      string
+}
+
+type RedisFindDoc struct {
+	Key []string
+}
+
+var batchSize = 100
+
+func newRedisClient(dbUrl string) ReddisConnector {
 	cl := redis.NewClient(&redis.Options{
 		Addr: dbUrl,
 	})
@@ -26,10 +51,6 @@ func (rc *redisClient) Connect() error {
 		return err
 	}
 	return nil
-}
-
-type RedisFindDoc struct {
-	Key []string
 }
 
 func (rc *redisClient) FindOne(ctx context.Context, collection string, filter interface{}) (interface{}, error) {
@@ -50,9 +71,99 @@ func (rc *redisClient) FindOneHash(ctx context.Context, collection string, filte
 	return val, nil
 }
 
+func (rc *redisClient) FindManyHash(ctx context.Context, document []interface{}) ([]interface{}, error) {
+
+	resultChan := make(chan interface{})
+	errChan := make(chan error)
+
+	batches := createBatches(document)
+	for i := range batches {
+		go findBatchFromHash(rc, ctx, batches[i], errChan, resultChan)
+	}
+
+	results := <-resultChan
+	return results.([]interface{}), nil
+}
+
+func findBatchFromHash(rc *redisClient, ctx context.Context, document []interface{}, errChan chan<- error, resultChan chan<- interface{}) {
+	pipe := rc.cl.TxPipeline()
+	var results []interface{}
+	for i := range document {
+		convertedDoc := RedisFindHash{}
+		err := mapstructure.Decode(document[i], &convertedDoc)
+		if err != nil {
+			errChan <- err
+		}
+		val, err := rc.cl.HGet(context.TODO(), createRedisKey(convertedDoc.Collection, convertedDoc.Key), convertedDoc.Field).Result()
+		if err != nil {
+			errChan <- err
+		}
+		results = append(results, val)
+	}
+
+	if _, err := pipe.Exec(context.TODO()); err != nil {
+		errChan <- err
+	}
+
+	resultChan <- results
+
+}
+
+func (rc *redisClient) InsertOneHash(ctx context.Context, collection string, document interface{}) (interface{}, error) {
+
+	convertedDoc := RedisInsertHash{}
+	err := mapstructure.Decode(document, &convertedDoc)
+	if err != nil {
+		return nil, err
+	}
+	if err := rc.cl.HMSet(ctx, convertedDoc.Collection, convertedDoc.Key, convertedDoc.Doc).Err(); err != nil {
+		return nil, err
+	}
+
+	rc.cl.Expire(ctx, convertedDoc.Collection, convertedDoc.Expiry)
+
+	return nil, nil
+}
+
+func (rc *redisClient) InsertManyHash(ctx context.Context, document []interface{}) (interface{}, error) {
+
+	errChan := make(chan error)
+	batches := createBatches(document)
+	for i := range batches {
+		go insertBatchToHash(rc, ctx, batches[i], errChan)
+	}
+	errors := <-errChan
+	return nil, errors
+}
+
+func insertBatchToHash(rc *redisClient, ctx context.Context, document []interface{}, errChan chan<- error) {
+	pipe := rc.cl.TxPipeline()
+
+	for i := range document {
+		convertedDoc := RedisInsertHash{}
+		err := mapstructure.Decode(document[i], &convertedDoc)
+		if err != nil {
+			errChan <- err
+		}
+		if err := rc.cl.HMSet(ctx, convertedDoc.Collection, convertedDoc.Key, convertedDoc.Doc).Err(); err != nil {
+			errChan <- err
+		}
+
+		pipe.Expire(ctx, convertedDoc.Collection, convertedDoc.Expiry)
+	}
+	if _, err := pipe.Exec(context.TODO()); err != nil {
+		errChan <- err
+	}
+
+	close(errChan)
+}
+
 func (rc *redisClient) FindMany(ctx context.Context, collection string, filter interface{}) ([]interface{}, error) {
 	convertedDoc := RedisFindDoc{}
-	mapstructure.Decode(filter, &convertedDoc)
+	err := mapstructure.Decode(filter, &convertedDoc)
+	if err != nil {
+		return nil, err
+	}
 
 	for i, data := range convertedDoc.Key {
 		convertedDoc.Key[i] = createRedisKey(collection, data)
@@ -61,96 +172,20 @@ func (rc *redisClient) FindMany(ctx context.Context, collection string, filter i
 
 }
 
-type RedisInsertDoc struct {
-	Key    string
-	Doc    interface{}
-	Expiry time.Duration
-}
-
-type RedisInsertHash struct {
-	Collection string
-	Key        string
-	Doc        interface{}
-	Expiry     time.Duration
-}
-
-type RedisFindHash struct {
-	Collection string
-	Key        string
-	Field      string
-}
-
 func (rc *redisClient) InsertOne(ctx context.Context, collection string, document interface{}) (interface{}, error) {
 
 	convertedDoc := RedisInsertDoc{}
-	mapstructure.Decode(document, &convertedDoc)
+	err := mapstructure.Decode(document, &convertedDoc)
+	if err != nil {
+		return nil, err
+	}
 
-	err := rc.cl.Set(context.TODO(), createRedisKey(collection, convertedDoc.Key), convertedDoc.Doc, time.Duration(convertedDoc.Expiry)).Err()
+	err = rc.cl.Set(context.TODO(), createRedisKey(collection, convertedDoc.Key), convertedDoc.Doc, time.Duration(convertedDoc.Expiry)).Err()
 	var res interface{} = false
 	if err != nil {
 		return res, err
 	}
 	return nil, nil
-}
-
-func (rc *redisClient) InsertOneHash(ctx context.Context, collection string, document ...interface{}) (interface{}, error) {
-	// var ifaces []interface{}
-	pipe := rc.cl.TxPipeline()
-
-	for i := range document {
-		convertedDoc := RedisInsertDoc{}
-		mapstructure.Decode(document[i], &convertedDoc)
-		if err := rc.cl.HMSet(context.TODO(), collection, convertedDoc.Key, convertedDoc.Doc).Err(); err != nil {
-			return nil, err
-		}
-		// ifaces = append(ifaces, createRedisKey(collection, convertedDoc.Key), convertedDoc.Doc)
-		pipe.Expire(context.TODO(), createRedisKey(collection, convertedDoc.Key), convertedDoc.Expiry)
-	}
-
-	if _, err := pipe.Exec(context.TODO()); err != nil {
-		return nil, err
-	}
-	return nil, nil
-}
-
-func (rc *redisClient) InsertManyHash(ctx context.Context, document []interface{}) (interface{}, error) {
-	// var ifaces []interface{}
-	pipe := rc.cl.TxPipeline()
-
-	for i := range document {
-		convertedDoc := RedisInsertHash{}
-		mapstructure.Decode(document[i], &convertedDoc)
-		if err := rc.cl.HMSet(context.TODO(), convertedDoc.Collection, convertedDoc.Key, convertedDoc.Doc).Err(); err != nil {
-			return nil, err
-		}
-		// ifaces = append(ifaces, createRedisKey(collection, convertedDoc.Key), convertedDoc.Doc)
-		pipe.Expire(context.TODO(), convertedDoc.Collection, convertedDoc.Expiry)
-	}
-
-	if _, err := pipe.Exec(context.TODO()); err != nil {
-		return nil, err
-	}
-	return nil, nil
-}
-
-func (rc *redisClient) FindManyHash(ctx context.Context, document []interface{}) ([]interface{}, error) {
-	var results []interface{}
-	pipe := rc.cl.TxPipeline()
-
-	for i := range document {
-		convertedDoc := RedisFindHash{}
-		mapstructure.Decode(document[i], &convertedDoc)
-		val, err := rc.cl.HGet(context.TODO(), createRedisKey(convertedDoc.Collection, convertedDoc.Key), convertedDoc.Field).Result()
-		if err != nil {
-			return nil, err
-		}
-		results = append(results, val)
-	}
-
-	if _, err := pipe.Exec(context.TODO()); err != nil {
-		return nil, err
-	}
-	return results, nil
 }
 
 func createRedisKey(collection string, subcollection string) string {
@@ -168,7 +203,10 @@ func (rc *redisClient) InsertMany(ctx context.Context, collection string, docume
 
 	for i := range document {
 		convertedDoc := RedisInsertDoc{}
-		mapstructure.Decode(document[i], &convertedDoc)
+		err := mapstructure.Decode(document[i], &convertedDoc)
+		if err != nil {
+			return nil, err
+		}
 
 		ifaces = append(ifaces, createRedisKey(collection, convertedDoc.Key), convertedDoc.Doc)
 		pipe.Expire(context.TODO(), createRedisKey(collection, convertedDoc.Key), convertedDoc.Expiry)
@@ -183,14 +221,6 @@ func (rc *redisClient) InsertMany(ctx context.Context, collection string, docume
 	return nil, nil
 }
 
-func (rc *redisClient) UpdateOne(ctx context.Context, collection string, filter interface{}, update interface{}) (interface{}, error) {
-	return nil, nil
-}
-
-func (rc *redisClient) UpdateMany(ctx context.Context, collection string, filter interface{}, update interface{}) (interface{}, error) {
-	return nil, nil
-}
-
 func (rc *redisClient) Cancel() error {
 	client := rc.cl
 	if client == nil {
@@ -202,4 +232,20 @@ func (rc *redisClient) Cancel() error {
 	}
 	fmt.Println("Connection to redis closed.")
 	return nil
+}
+
+func createBatches(data []interface{}) [][]interface{} {
+	var batches [][]interface{}
+
+	for i := 0; i < len(data); i += batchSize {
+		end := i + batchSize
+
+		if end > len(data) {
+			end = len(data)
+		}
+
+		batches = append(batches, data[i:end])
+	}
+
+	return batches
 }
